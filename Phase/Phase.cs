@@ -9,16 +9,15 @@ using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 using TShockAPI.DB;
-using Mono.Data.Sqlite;
-using MySql.Data.MySqlClient;
 using System.Net;
 using System.Net.Sockets;
 using System.Web.Script.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
-using StackExchange.Redis;
 using RabbitMQ.Client;
+using MySql.Data.MySqlClient;
+using Mono.Data.Sqlite;
 
 namespace Phase
 {
@@ -30,7 +29,7 @@ namespace Phase
         public byte B { get; set; }
     }
 
-    [ApiVersion(1, 21)]
+    [ApiVersion(2, 1)]
     public class Phase : TerrariaPlugin
     {
         public static Config Config = new Config();
@@ -143,8 +142,8 @@ namespace Phase
                     db.ConnectionString =
                         String.Format("Server={0}; Port={1}; Database={2}; Uid={3}; Pwd={4};",
                                                          TShock.Config.MySqlHost.Split(':')[0],
-                                                         "3306",
-                                                         "tshock",
+                                                         TShock.Config.MySqlHost.Split(':')[1],
+                                                         TShock.Config.MySqlDbName,
                                                          TShock.Config.MySqlUsername,
                                                          TShock.Config.MySqlPassword
                             );
@@ -235,10 +234,7 @@ namespace Phase
                         {
                             TShock.Utils.ForceKick(player, reason);
                             json.Add("state", "success");
-                            if (player.User != null)
-                                json.Add("responseMessage", "Successfully kicked player \"" + player.User.Name + "\"");
-                            else
-                                json.Add("responseMessage", "Successfully kicked player \"" + player.Name + "\"");
+                            json.Add("responseMessage", $"Successfully kicked player \"{name}\"");
                         }
                         else
                         {
@@ -366,10 +362,7 @@ namespace Phase
                                 if (passed)
                                 {
                                     json.Add("state", "success");
-                                    if (player.User != null)
-                                        json.Add("responseMessage", "Successfully kicked player \"" + player.User.Name + "\"");
-                                    else
-                                        json.Add("responseMessage", "Successfully kicked player \"" + player.Name + "\"");
+                                    json.Add("responseMessage", $"Successfully banned player \"{name}\"");
                                 } else
                                 {
                                     json.Add("responseMessage", "Something went wrong :/");
@@ -521,7 +514,7 @@ namespace Phase
         {
             if (!args.Handled)
             {
-                if (args.Text.StartsWith("/") && args.Text.Length > 1)
+                if ((args.Text.StartsWith(TShock.Config.CommandSpecifier) || args.Text.StartsWith(TShock.Config.CommandSilentSpecifier)) && args.Text.Length > 1)
                     return;
 
                 if (args.Who > 255 || args.Who < 0 || TShock.Players[args.Who] == null)

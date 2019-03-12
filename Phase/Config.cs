@@ -10,12 +10,13 @@ namespace Phase
     public class Config
     {
         public string token = "";
-        public string relayName = "";
         public string hostName = "t.dark-gaming.com";
         public string exchangeName = "";
         public string username = "";
         public string password = "";
         public string vhost = "phase";
+        public string relayReceiveFormat = "";
+        public string relayPhaseReceiveFormat = "";
         public bool logPhaseLoginRequests = false;
         public bool logPhaseMessages = false;
 
@@ -36,7 +37,6 @@ namespace Phase
         {
             var Conf = new Config();
             Conf.token = "token";
-            Conf.relayName = "";
             Conf.hostName = "t.dark-gaming.com";
             Conf.exchangeName = "exchange";
             Conf.username = "username";

@@ -71,6 +71,7 @@ namespace Phase
         {
             try {
                 factory = new ConnectionFactory() { HostName = HostName, UserName = Username, Password = Password, VirtualHost = '/' + vHost };
+                factory.AutomaticRecoveryEnabled = true;
                 connection = factory.CreateConnection();
                 channel = connection.CreateModel();
                 SetupQueues();
