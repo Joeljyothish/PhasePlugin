@@ -517,6 +517,11 @@ namespace Phase
                 if ((args.Text.StartsWith(TShock.Config.CommandSpecifier) || args.Text.StartsWith(TShock.Config.CommandSilentSpecifier)) && args.Text.Length > 1)
                     return;
 
+                if (args.CommandId._name != "Say")
+                {
+                    return;
+                }
+
                 if (args.Who > 255 || args.Who < 0 || TShock.Players[args.Who] == null)
                     return;
 
