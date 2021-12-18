@@ -16,8 +16,8 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using RabbitMQ.Client;
-using MySql.Data.MySqlClient;
 using Mono.Data.Sqlite;
+using MySql.Data.MySqlClient;
 
 namespace Phase
 {
@@ -189,8 +189,25 @@ namespace Phase
                         HandlePhaseCommand(message);
                         break;
                     case "chat":
-                        TSPlayer.All.SendMessage((string)message.content, (byte)message.R, (byte)message.G, (byte)message.B);
-                        break;
+                        {
+                            if (Config.showOtherServerMessages)
+                            {
+                                string text = (string)message.prefix;
+                                string text2 = (string)message.suffix;
+                                string text3 = (string)message.name;
+                                string text4 = (string)message.contentRaw.plain;
+                                string text5 = (string)message.originServer;
+                                if (text == null || text.Length == 0)
+                                {
+                                    TSPlayer.All.SendMessage(text5 + "> <" + text3 + "> " + text2 + ": " + text4, (byte)message.R, (byte)message.G, (byte)message.B);
+                                }
+                                else
+                                {
+                                    TSPlayer.All.SendMessage(text5 + "> [" + text + "] <" + text3 + "> " + text2 + ": " + text4, (byte)message.R, (byte)message.G, (byte)message.B);
+                                }
+                            }
+                            break;
+                        }
                     case "login":
                         HandlePasswordRequest((string)message.username);
                         break;
@@ -223,7 +240,7 @@ namespace Phase
                         {
                             string accountName = message.accountName;
                             name = accountName;
-                            player = TShock.Players.FirstOrDefault(p => p != null && p.User != null && p.User.Name == accountName);
+                            player = TShock.Players.FirstOrDefault(p => p != null && p.Account != null && p.Account.Name == accountName);
                         }
 
                         JObject json = new JObject();
@@ -232,7 +249,7 @@ namespace Phase
                         json.Add("discID", discID);
                         if (player != null)
                         {
-                            TShock.Utils.ForceKick(player, reason);
+                            player.Kick(reason, true);
                             json.Add("state", "success");
                             json.Add("responseMessage", $"Successfully kicked player \"{name}\"");
                         }
@@ -262,7 +279,7 @@ namespace Phase
                         {
                             string accountName = message.accountName;
                             name = accountName;
-                            player = TShock.Players.FirstOrDefault(p => p != null && p.User != null && p.User.Name == accountName);
+                            player = TShock.Players.FirstOrDefault(p => p != null && p.Account != null && p.Account.Name == accountName);
                         }
 
                         JObject json = new JObject();
@@ -276,8 +293,8 @@ namespace Phase
                                 player.mute = true;
                                 TSPlayer.All.SendInfoMessage("{0} has been muted by {1} for \"{2}\".", player.Name, userName, reason);
 
-                                if (player.User != null)
-                                    json.Add("responseMessage", "Successfully muted player \"" + player.User.Name + "\"");
+                                if (player.Account != null)
+                                    json.Add("responseMessage", "Successfully muted player \"" + player.Account.Name + "\"");
                                 else
                                     json.Add("responseMessage", "Successfully muted player \"" + player.Name + "\"");
                             } else
@@ -285,8 +302,8 @@ namespace Phase
                                 player.mute = false;
                                 TSPlayer.All.SendInfoMessage("{0} has been unmuted by {1}", player.Name, userName);
 
-                                if (player.User != null)
-                                    json.Add("responseMessage", "Successfully unmuted player \"" + player.User.Name + "\"");
+                                if (player.Account != null)
+                                    json.Add("responseMessage", "Successfully unmuted player \"" + player.Account.Name + "\"");
                                 else
                                     json.Add("responseMessage", "Successfully unmuted player \"" + player.Name + "\"");
                             }
@@ -337,7 +354,7 @@ namespace Phase
                         {
                             string accountName = message.accountName;
                             name = accountName;
-                            player = TShock.Players.FirstOrDefault(p => p != null && p.User != null && p.User.Name == accountName);
+                            player = TShock.Players.FirstOrDefault(p => p != null && p.Account != null && p.Account.Name == accountName);
                         } else if (banType == "playerIP")
                         {
                             ip = (string)message.playerIP;
@@ -353,10 +370,10 @@ namespace Phase
                                 bool passed = false;
                                 if (expire)
                                 {
-                                    passed = TShock.Bans.AddBan(player.IP, player.Name, player.UUID, reason, false, userName, DateTime.UtcNow.AddSeconds(time).ToString("s"));
+                                    passed = TShock.Bans.AddBan(player.IP, player.Name, player.UUID, player.Account?.Name ?? "", reason, false, userName, DateTime.UtcNow.AddSeconds(time).ToString("s"));
                                 } else
                                 {
-                                    passed = TShock.Bans.AddBan(player.IP, player.Name, player.UUID, reason, false, userName);
+                                    passed = TShock.Bans.AddBan(player.IP, player.Name, player.UUID, player.Account?.Name ?? "", reason, false, userName);
                                 }
 
                                 if (passed)
@@ -398,16 +415,15 @@ namespace Phase
                                 bool passed = false;
                                 if (expire)
                                 {
-                                    passed = TShock.Bans.AddBan(ip, "", "", reason, false, userName, DateTime.UtcNow.AddSeconds(time).ToString("s"));
+                                    passed = TShock.Bans.AddBan(ip: ip, reason: reason, banner: userName, expiration: DateTime.UtcNow.AddSeconds(time).ToString("s"));
                                 }
                                 else
                                 {
-                                    passed = TShock.Bans.AddBan(ip, "", "", reason, false, userName);
+                                    passed = TShock.Bans.AddBan(ip: ip, reason: reason, banner: userName);
                                 }
 
                                 if (passed)
                                 {
-                                    TShock.Bans.AddBan(ip, "", "", reason, false, userName);
                                     json.Add("responseMessage", String.Format("Banned IP {0}.", ip));
                                     json.Add("state", "success");
                                 }
@@ -440,10 +456,10 @@ namespace Phase
                             }
                         } else if (offlineBan)
                         {
-                            User user = TShock.Users.GetUserByName(name);
+                            UserAccount user = TShock.UserAccounts.GetUserAccountByName(name);
                             if (user != null) {
                                 var knownIps = JsonConvert.DeserializeObject<List<string>>(user.KnownIps);
-                                bool passed = TShock.Bans.AddBan(knownIps.Last(), user.Name, user.UUID, reason, false, userName);
+                                bool passed = TShock.Bans.AddBan(ip: knownIps.Last(), accountName: user.Name, uuid: user.UUID, reason: reason, banner: userName);
 
                                 if (passed)
                                 {
@@ -543,7 +559,7 @@ namespace Phase
                     newText = rgx.Replace(newText, replacement);
                 }
 
-                if (!player.mute && player.Group.HasPermission("tshock.canchat"))
+                if (!player.mute && player.Group.HasPermission("tshock.canchat") && Config.sendMessagesToPhase)
                 {
                     // Send to Phase
                     JObject json = new JObject();
@@ -557,8 +573,9 @@ namespace Phase
                     json.Add("G", Convert.ToString(TShock.Players[args.Who].Group.G));
                     json.Add("B", Convert.ToString(TShock.Players[args.Who].Group.B));
                     json.Add("ip", TShock.Players[args.Who].IP);
-                    json.Add("id", Convert.ToString(TShock.Players[args.Who].User != null ? TShock.Players[args.Who].User.ID : -1));
-                    json.Add("accountName", TShock.Players[args.Who].User != null ? TShock.Players[args.Who].User.Name : "");
+                    json.Add("id", Convert.ToString(TShock.Players[args.Who].Account != null ? TShock.Players[args.Who].Account.ID : -1));
+                    json.Add("accountName", TShock.Players[args.Who].Account != null ? TShock.Players[args.Who].Account.Name : "");
+                    json.Add("uuid", TShock.Players[args.Who].UUID);
 
                     if (RMQ != null)
                         RMQ.Publish(json.ToString());
@@ -575,6 +592,7 @@ namespace Phase
                 json.Add("type", "player_leave");
                 json.Add("name", TShock.Players[args.Who].Name);
                 json.Add("ip", TShock.Players[args.Who].IP);
+                json.Add("uuid", TShock.Players[args.Who].UUID);
                 if (RMQ != null)
                     RMQ.Publish(json.ToString());
             }
@@ -589,6 +607,7 @@ namespace Phase
                 json.Add("type", "player_join");
                 json.Add("name", TShock.Players[args.Who].Name);
                 json.Add("ip", TShock.Players[args.Who].IP);
+                json.Add("uuid", TShock.Players[args.Who].UUID);
                 if (RMQ != null)
                     RMQ.Publish(json.ToString());
             }

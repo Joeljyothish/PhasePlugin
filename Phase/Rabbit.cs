@@ -101,8 +101,8 @@ namespace Phase
             };
 
             channel.BasicConsume(queue: queueName,
-                                 noAck: true,
-                                 consumer: consumer);
+                                 consumer: consumer,
+                                 autoAck: true);
         }
 
         public void Publish(string message)

@@ -19,6 +19,8 @@ namespace Phase
         public string relayPhaseReceiveFormat = "";
         public bool logPhaseLoginRequests = false;
         public bool logPhaseMessages = false;
+        public bool showOtherServerMessages = true;
+        public bool sendMessagesToPhase = true;
 
         public void Write(string path)
         {
