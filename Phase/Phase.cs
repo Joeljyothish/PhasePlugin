@@ -129,7 +129,7 @@ namespace Phase
 
         private void Database()
         {
-            if (TShock.Config.StorageType == "sqlite")
+            if (TShock.Config.Settings.StorageType == "sqlite")
             {
                 string sql = Path.Combine(TShock.SavePath, "tshock.sqlite");
                 db = new SqliteConnection(string.Format("uri=file://{0},Version=3", sql));
@@ -141,11 +141,11 @@ namespace Phase
                     db = new MySqlConnection();
                     db.ConnectionString =
                         String.Format("Server={0}; Port={1}; Database={2}; Uid={3}; Pwd={4};",
-                                                         TShock.Config.MySqlHost.Split(':')[0],
-                                                         TShock.Config.MySqlHost.Split(':')[1],
-                                                         TShock.Config.MySqlDbName,
-                                                         TShock.Config.MySqlUsername,
-                                                         TShock.Config.MySqlPassword
+                                                         TShock.Config.Settings.MySqlHost.Split(':')[0],
+                                                         TShock.Config.Settings.MySqlHost.Split(':')[1],
+                                                         TShock.Config.Settings.MySqlDbName,
+                                                         TShock.Config.Settings.MySqlUsername,
+                                                         TShock.Config.Settings.MySqlPassword
                             );
                 }
                 catch (MySqlException ex)
@@ -530,7 +530,7 @@ namespace Phase
         {
             if (!args.Handled)
             {
-                if ((args.Text.StartsWith(TShock.Config.CommandSpecifier) || args.Text.StartsWith(TShock.Config.CommandSilentSpecifier)) && args.Text.Length > 1)
+                if ((args.Text.StartsWith(TShock.Config.Settings.CommandSpecifier) || args.Text.StartsWith(TShock.Config.Settings.CommandSilentSpecifier)) && args.Text.Length > 1)
                     return;
 
                 if (args.CommandId._name != "Say")
