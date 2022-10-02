@@ -11,12 +11,11 @@ using TShockAPI;
 using TShockAPI.DB;
 using System.Net;
 using System.Net.Sockets;
-using System.Web.Script.Serialization;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
 using RabbitMQ.Client;
-using Mono.Data.Sqlite;
+using Microsoft.Data.Sqlite;
 using MySql.Data.MySqlClient;
 
 namespace Phase
@@ -92,7 +91,6 @@ namespace Phase
 
         private void PostInit(EventArgs args)
         {
-            var jsonSerializer = new JavaScriptSerializer();
             SetupRabbit();
         }
 
@@ -177,7 +175,7 @@ namespace Phase
         private void PhaseMessage(object sender, Message m)
         {
             dynamic message = JObject.Parse(m.content);
-            //string[] message = new JavaScriptSerializer().Deserialize<string[]>(messageIncoming);
+            //string[] message = JsonConvert.DeserializeObject<string[]>(messageIncoming);
             //Console.WriteLine("[PhaseMessage] {Type: " + ((string)message.type) + "}");
             string token = message.token;
             if (token == Config.token)
@@ -490,12 +488,11 @@ namespace Phase
 
         private async void HandlePasswordRequest(string username)
         {
-            var jsonSerializer = new JavaScriptSerializer();
             string information = await getUserInformation(username);
             //Console.WriteLine("Pushing: " + information);
             if (RMQ != null)
                 RMQ.Publish(information);
-            //await sub.PublishAsync("phase_loginResponse", jsonSerializer.Serialize(information));
+            //await sub.PublishAsync("phase_loginResponse", JsonConvert.SerializeObject(information));
         }
 
         private async Task<string> getUserInformation(string username)
