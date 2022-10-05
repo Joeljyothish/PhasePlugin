@@ -130,7 +130,7 @@ namespace Phase
             if (TShock.Config.Settings.StorageType == "sqlite")
             {
                 string sql = Path.Combine(TShock.SavePath, "tshock.sqlite");
-                db = new SqliteConnection(string.Format("uri=file://{0},Version=3", sql));
+                db = new SqliteConnection(string.Format("Data Source={0}", sql));
             }
             else
             {
